@@ -1,15 +1,24 @@
-const express = require('express')
-const cors = require('cors')
+const cors = require('cors');
+const express = require('express');
+const routes = require('./routes');
+const app = express();
+const Web3 = require("web3");
 
-const app = express()
+const db = require("./models");
+db.sequelize.sync();
 
-// Init Middleware
-app.use(express.json())
-app.use(cors())
+app.use(cors());
+app.options('*', cors());
 
-// Define Routes
-app.use('/api/test', require('./routes/api/test'))
+app.use(express.json());
+app.use(routes);
+// Handling Errors
+app.use((err, req, res, next) => {
+    err.statusCode = err.statusCode || 500;
+    err.message = err.message || "Internal Server Error";
+    res.status(err.statusCode).json({
+        message: err.message,
+    });
+});
 
-const PORT = process.env.PORT || 5001
-
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`))
+app.listen(3001, () => console.log('Server is running on port 3001'));

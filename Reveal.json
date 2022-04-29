@@ -1,0 +1,11 @@
+{
+    "name": "HeavyGunner Reveal",
+    "description": "HeavyGunner is test project that generate 100 NFTs based on ERC 721A",
+    "image": "https://ipfs.io/ipfs/QmZrUccAxJRMZaTcJQDyeoQiGyWr4FPnkvrTrnbZxwUVwB",
+    "attributes": [
+        {
+            "trait_type": "REVEALIMAGE",
+            "value": "Unreveled "
+        }
+    ]
+}

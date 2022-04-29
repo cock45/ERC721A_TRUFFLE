@@ -6,6 +6,8 @@ import axios from "axios";
 import Web3 from 'web3';
 import { useEffect, useState } from 'react'
 import CounterInput from "react-counter-input"
+import { mintNft } from "./components/interact"
+import swal from "sweetalert"
 
 function App() {
   const [metamaskConnected, setMetamaskConnnected] = useState(false);
@@ -13,6 +15,7 @@ function App() {
   const [amount, setAmount] = useState(1);
   const [networkId, setNetworkId] = useState();
   const [isMetamask, setIsMetamask] = useState(true);
+  const [totalMintCount, setTotalMintCount] = useState(0);
 
   useEffect(async () => {
     await loadWeb3().then((data) => {
@@ -20,6 +23,8 @@ function App() {
         loadBlockchainData();
       }
     });
+
+    getTotalSupply();
   }, []);
 
 
@@ -63,8 +68,71 @@ function App() {
     }
   };
 
-  function handleMint() {
+  function getTotalSupply() {
+    axios.get(`http://localhost:3001/api/getTotalMintCount`)
+      .then(res => {
+        if (res.data.success) {
+          setTotalMintCount(Number(res.data.totalCount));
+        } else {
+          console.log("Cannot connect backend");
+        }
+      })
+      .catch(err => {
+        console.log("error", err);
+      });
+  }
 
+  function handleMint() {
+    if (Number(totalMintCount) + amount > 100) {
+      swal("Sorry!", "The sales limit is 100", "warning")
+      setAmount(100 - Number(totalMintCount));
+    } else {
+      const checkMintData = {
+        address: account
+      };
+
+      const getMintData = {
+        address: account,
+        count: amount
+      }
+      axios.post(`http://localhost:3001/api/checkBalance`, getMintData)
+        .then(res => {
+          if (res.data.success) {
+            axios.post(`http://localhost:3001/api/checkMintable`, checkMintData)
+              .then(res => {
+                if (res.data.success) {
+                  axios.post(`http://localhost:3001/api/getMintData`, getMintData)
+                    .then(async (res) => {
+                      if (res.data.success) {
+                        const result = await mintNft(res.data.price, amount, account);
+                        if (result) {
+                          console.log("3");
+                          getTotalSupply();
+                          swal("Congratulations!", "You just minted our NFT!", "success")
+                        }
+                      } else {
+                        swal("Sorry!", res.data.message, "warning")
+                      }
+                    })
+                    .catch(err => {
+                      swal("Sorry!", err, "warning")
+                    })
+                } else {
+                  swal("Sorry!", res.data.message, "warning")
+                }
+              })
+              .catch(err => {
+                swal("Sorry!", "Network Error", "error")
+              });
+          }
+          else {
+            swal("Sorry!", res.data.msg, "warning")
+          }
+        })
+        .catch(err => {
+          console.log("cannot check price =========> ", err);
+        })
+    }
   }
 
   return (
@@ -91,6 +159,7 @@ function App() {
           />
         </div>
         <button type="button" className={`btn btn-warning btn-wallet gradient-btn`} onClick={handleMint}>Mint</button>
+        <p>{totalMintCount}/100</p>
       </header>
     </div>
   );
